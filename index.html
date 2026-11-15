@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#d9480f">
+<title>美食雷達｜附近評價最好的 50 間</title>
+<style>
+:root{--bg:#faf7f2;--card:#fff;--ink:#2b2118;--mute:#7a6c5f;--line:#eadfd2;--acc:#d9480f;--acc2:#fff1e8;--star:#f59f00}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+header{background:linear-gradient(135deg,#d9480f,#f08c00);color:#fff;padding:18px 16px 14px;position:sticky;top:0;z-index:5;box-shadow:0 2px 10px #0003}
+header h1{margin:0;font-size:20px;display:flex;justify-content:space-between;align-items:center}
+header small{opacity:.9;font-weight:400;font-size:12px}
+.gear{background:#fff3;border:0;color:#fff;border-radius:8px;padding:4px 10px;font-size:13px;cursor:pointer}
+main{max-width:760px;margin:0 auto;padding:12px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input[type=text],input[type=password],select{font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);min-width:0}
+input.grow{flex:1}
+button.btn{font:inherit;border:0;border-radius:10px;padding:9px 14px;background:var(--acc);color:#fff;cursor:pointer;font-weight:600}
+button.btn.alt{background:var(--acc2);color:var(--acc)}
+button.btn:disabled{opacity:.5}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--mute)}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.lbl{font-size:12px;color:var(--mute)}
+#status{font-size:13px;color:var(--mute);margin:4px 2px 10px;min-height:20px}
+#status.err{color:#c92a2a}
+.item{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.rank{flex:0 0 34px;height:34px;border-radius:50%;background:var(--acc2);color:var(--acc);font-weight:800;display:grid;place-items:center}
+.item:nth-child(-n+3) .rank{background:var(--acc);color:#fff}
+.body{flex:1;min-width:0}
+.name{font-weight:700;font-size:16px;word-break:break-word}
+.meta{font-size:13px;color:var(--mute);margin-top:2px}
+.rate{color:var(--star);font-weight:700}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;background:var(--acc2);color:var(--acc);margin-right:4px}
+.tag.open{background:#e6f9ec;color:#2b8a3e}.tag.closed{background:#f1f3f5;color:#868e96}
+.addr{font-size:13px;margin-top:4px}
+.acts{display:flex;gap:8px;margin-top:8px}
+.acts a{font-size:13px;text-decoration:none;padding:5px 12px;border-radius:8px;background:var(--acc2);color:var(--acc);font-weight:600}
+dialog{border:0;border-radius:16px;padding:18px;max-width:420px;width:calc(100% - 32px)}
+dialog::backdrop{background:#0006}
+dialog p{font-size:13px;color:var(--mute);margin:6px 0}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:s .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes s{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+  <h1><span>🍜 美食雷達 <small>評價最好的 50 間</small></span><button class="gear" id="gear">⚙ API Key</button></h1>
+</header>
+<main>
+  <div class="panel">
+    <div class="row">
+      <button class="btn" id="locate">📍 用我的位置</button>
+      <input type="text" id="addr" class="grow" placeholder="或輸入地址／地標，例如：台北車站">
+      <button class="btn alt" id="goAddr">搜尋</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <span class="lbl">範圍</span>
+      <select id="radius">
+        <option value="1000">1 公里</option><option value="2000">2 公里</option>
+        <option value="3000" selected>3 公里</option><option value="5000">5 公里</option>
+        <option value="10000">10 公里</option>
+      </select>
+      <span class="lbl">至少評論數</span>
+      <select id="minRev">
+        <option value="30">30</option><option value="100" selected>100</option>
+        <option value="300">300</option><option value="1000">1000</option>
+      </select>
+      <span class="lbl">排序</span>
+      <select id="sort">
+        <option value="score">綜合推薦</option><option value="rating">評分高→低</option>
+        <option value="count">評論數多→少</option><option value="dist">距離近→遠</option>
+      </select>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div class="row" style="margin-top:10px"><label class="lbl"><input type="checkbox" id="openNow"> 只看營業中</label></div>
+  </div>
+  <div id="status">按「用我的位置」開始，或輸入地址。</div>
+  <div id="list"></div>
+  <p class="lbl" style="text-align:center">資料來源：Google 地圖。綜合推薦＝評分與評論數加權（評論少的店會被往下拉），非單純最高分。</p>
+</main>
+
+<dialog id="dlg">
+  <h3 style="margin:0 0 6px">Google API Key</h3>
+  <p>需啟用 <b>Places API (New)</b>。Key 只存在這支手機／瀏覽器的 localStorage，不會上傳。建議在 Google Cloud 把 Key 限制為你的網站來源（HTTP referrer）。</p>
+  <input type="password" id="key" class="grow" style="width:100%" placeholder="AIza...">
+  <div class="row" style="margin-top:12px;justify-content:flex-end">
+    <button class="btn alt" id="keyCancel">取消</button><button class="btn" id="keySave">儲存</button>
+  </div>
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const CATS = {
+  all:{label:'全部', q:['美食 餐廳','小吃 在地美食','火鍋 燒肉 燒烤','日式料理 拉麵 壽司','咖啡 甜點 早午餐','中式 熱炒 麵食']},
+  chinese:{label:'中式／小吃', q:['中式餐廳','小吃 在地美食','麵食 水餃 滷肉飯','熱炒']},
+  jp:{label:'日式', q:['日式料理','拉麵','壽司 丼飯','居酒屋']},
+  kr:{label:'韓式', q:['韓式料理','韓式烤肉','韓式炸雞']},
+  west:{label:'西式／義式', q:['義大利麵 披薩','牛排 西餐','漢堡 美式餐廳']},
+  bbq:{label:'火鍋／燒烤', q:['火鍋','燒肉','燒烤 串燒']},
+  cafe:{label:'咖啡／甜點', q:['咖啡廳','甜點 蛋糕','早午餐']},
+  night:{label:'宵夜／夜市', q:['夜市','宵夜','滷味 鹹酥雞']}
+};
+let cat='all', loc=null, running=false, results=[];
+const PRICE={PRICE_LEVEL_FREE:'免費',PRICE_LEVEL_INEXPENSIVE:'$',PRICE_LEVEL_MODERATE:'$$',PRICE_LEVEL_EXPENSIVE:'$$$',PRICE_LEVEL_VERY_EXPENSIVE:'$$$$'};
+
+const getKey=()=>{try{return localStorage.getItem('gkey')||''}catch(e){return ''}};
+const setKey=v=>{try{localStorage.setItem('gkey',v)}catch(e){}};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function status(t,err,busy){const s=$('#status');s.className=err?'err':'';s.innerHTML=(busy?'<span class="spin"></span>':'')+esc(t)}
+
+function haversine(a,b){const R=6371000,r=Math.PI/180;
+  const dLat=(b.lat-a.lat)*r,dLng=(b.lng-a.lng)*r;
+  const x=Math.sin(dLat/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x))}
+const fmtDist=m=>m<1000?Math.round(m/10)*10+' 公尺':(m/1000).toFixed(1)+' 公里';
+
+// Bayesian average: pulls low-review shops toward C
+function score(r,n){const m=150,C=4.0;return (n/(n+m))*r+(m/(n+m))*C}
+
+async function searchText(body,key){
+  const r=await fetch('https://places.googleapis.com/v1/places:searchText',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-Goog-Api-Key':key,
+      'X-Goog-FieldMask':'places.id,places.displayName,places.rating,places.userRatingCount,places.formattedAddress,places.location,places.googleMapsUri,places.nationalPhoneNumber,places.priceLevel,places.priceRange,places.currentOpeningHours.openNow,places.primaryTypeDisplayName,places.businessStatus,places.types,nextPageToken'},
+    body:JSON.stringify(body)});
+  const j=await r.json();
+  if(!r.ok) throw new Error(j.error?.message||('HTTP '+r.status));
+  return j;
+}
+
+async function geocode(text,key){
+  const j=await searchText({textQuery:text,languageCode:'zh-TW',regionCode:'TW',pageSize:1},key);
+  const p=j.places?.[0]; if(!p) throw new Error('找不到這個地點');
+  return {lat:p.location.latitude,lng:p.location.longitude,name:p.displayName?.text||text};
+}
+
+async function run(){
+  if(running||!loc) return;
+  const key=getKey(); if(!key){$('#dlg').showModal();return}
+  running=true; $('#list').innerHTML='';
+  const radius=+$('#radius').value, minRev=+$('#minRev').value;
+  const queries=CATS[cat].q, map=new Map(); let done=0;
+  status('搜尋中…',false,true);
+  try{
+    await Promise.all(queries.map(async q=>{
+      let token=null;
+      for(let page=0;page<3;page++){
+        const body={textQuery:q,languageCode:'zh-TW',regionCode:'TW',pageSize:20,
+          locationBias:{circle:{center:{latitude:loc.lat,longitude:loc.lng},radius:Math.min(radius,50000)}}};
+        if(token) body.pageToken=token;
+        const j=await searchText(body,key);
+        (j.places||[]).forEach(p=>map.set(p.id,p));
+        status(`搜尋中…已找到 ${map.size} 間`,false,true);
+        token=j.nextPageToken; if(!token) break;
+      }
+      done++;
+    }));
+    results=[...map.values()].map(p=>{
+      const pos={lat:p.location.latitude,lng:p.location.longitude};
+      return {id:p.id,name:p.displayName?.text||'',rating:p.rating||0,n:p.userRatingCount||0,
+        addr:(p.formattedAddress||'').replace(/^\d+\s*/,'').replace(/^台灣/,''),url:p.googleMapsUri,phone:p.nationalPhoneNumber,
+        type:p.primaryTypeDisplayName?.text||'',price:PRICE[p.priceLevel]||(p.priceRange?fmtRange(p.priceRange):''),
+        open:p.currentOpeningHours?.openNow,status:p.businessStatus,types:p.types||[],
+        dist:haversine(loc,pos),score:score(p.rating||0,p.userRatingCount||0)};
+    }).filter(p=>p.status!=='CLOSED_PERMANENTLY'&&p.status!=='CLOSED_TEMPORARILY'
+      &&p.dist<=radius&&p.n>=minRev&&p.rating>0&&!p.types.includes('lodging'));
+    results.sort((a,b)=>b.score-a.score);
+    results=results.slice(0,50);
+    render();
+  }catch(e){
+    status('搜尋失敗：'+e.message+(/API key|PERMISSION|referer/i.test(e.message)?'（請檢查 API Key 與 Places API (New) 是否已啟用）':''),true);
+  }finally{running=false}
+}
+function fmtRange(r){const f=x=>x?.units?('$'+x.units):'';return [f(r.startPrice),f(r.endPrice)].filter(Boolean).join('–')}
+
+function render(){
+  let arr=results.map((p,i)=>({...p,rank:i+1}));
+  if($('#openNow').checked) arr=arr.filter(p=>p.open===true);
+  const s=$('#sort').value;
+  if(s==='rating') arr.sort((a,b)=>b.rating-a.rating||b.n-a.n);
+  else if(s==='count') arr.sort((a,b)=>b.n-a.n);
+  else if(s==='dist') arr.sort((a,b)=>a.dist-b.dist);
+  if(!arr.length){status('這個範圍內沒有符合條件的店。試試放寬範圍或降低「至少評論數」。',true);$('#list').innerHTML='';return}
+  status(`在「${loc.name}」周圍 ${fmtDist(+$('#radius').value)} 內，共 ${arr.length} 間（${CATS[cat].label}）`);
+  $('#list').innerHTML=arr.map((p,i)=>`
+  <div class="item"><div class="rank">${s==='score'?p.rank:i+1}</div><div class="body">
+    <div class="name">${esc(p.name)}</div>
+    <div class="meta"><span class="rate">★ ${p.rating.toFixed(1)}</span> (${p.n.toLocaleString()} 則) · ${fmtDist(p.dist)}${p.price?' · '+esc(p.price):''}</div>
+    <div class="meta">${p.type?`<span class="tag">${esc(p.type)}</span>`:''}${p.open===true?'<span class="tag open">營業中</span>':p.open===false?'<span class="tag closed">休息中</span>':''}</div>
+    <div class="addr">${esc(p.addr)}</div>
+    <div class="acts"><a href="${esc(p.url)}" target="_blank" rel="noopener">🗺 地圖導航</a>${p.phone?`<a href="tel:${esc(p.phone.replace(/[^\d+]/g,''))}">📞 ${esc(p.phone)}</a>`:''}</div>
+  </div></div>`).join('');
+}
+
+// UI wiring
+$('#chips').innerHTML=Object.entries(CATS).map(([k,v])=>`<span class="chip${k===cat?' on':''}" data-k="${k}">${v.label}</span>`).join('');
+$('#chips').onclick=e=>{const k=e.target.dataset.k;if(!k)return;cat=k;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c.dataset.k===k));run()};
+$('#sort').onchange=()=>results.length&&render();
+$('#openNow').onchange=()=>results.length&&render();
+$('#radius').onchange=run; $('#minRev').onchange=run;
+$('#gear').onclick=()=>{$('#key').value=getKey();$('#dlg').showModal()};
+$('#keyCancel').onclick=()=>$('#dlg').close();
+$('#keySave').onclick=()=>{setKey($('#key').value.trim());$('#dlg').close();loc&&run()};
+$('#locate').onclick=()=>{
+  if(!getKey()){$('#dlg').showModal();return}
+  if(!navigator.geolocation){status('這個瀏覽器不支援定位，請改輸入地址。',true);return}
+  status('定位中…',false,true);
+  navigator.geolocation.getCurrentPosition(
+    p=>{loc={lat:p.coords.latitude,lng:p.coords.longitude,name:'你的位置'};run()},
+    e=>status('無法取得定位（'+(e.code===1?'已拒絕權限':'定位失敗')+'），請改輸入地址。',true),
+    {enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+};
+async function byAddr(){
+  const t=$('#addr').value.trim(); if(!t)return;
+  const key=getKey(); if(!key){$('#dlg').showModal();return}
+  try{status('尋找地點…',false,true);loc=await geocode(t,key);run()}catch(e){status('搜尋失敗：'+e.message,true)}
+}
+$('#goAddr').onclick=byAddr;
+$('#addr').onkeydown=e=>{if(e.key==='Enter')byAddr()};
+if(!getKey()) status('第一次使用請先點右上角「⚙ API Key」填入你的 Google API Key。');
+</script>
+</body>
+</html>
